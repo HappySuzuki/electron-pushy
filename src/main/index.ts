@@ -2,6 +2,7 @@ import { app, shell, BrowserWindow } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
+import Pushy from 'pushy-electron'
 
 function createWindow(): void {
   // Create the browser window.
@@ -21,6 +22,11 @@ function createWindow(): void {
     mainWindow.show()
   })
 
+  Pushy.setNotificationListener((data: { message: string }) => {
+    Pushy.alert(mainWindow, 'Received notification: ' + data.message)
+    console.log(data)
+  })
+
   mainWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
     return { action: 'deny' }
@@ -33,6 +39,21 @@ function createWindow(): void {
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
+
+  mainWindow.webContents.on('did-finish-load', () => {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    const PUSHY_API_KEY = import.meta.env.MAIN_VITE_PUSHY_API_KEY
+
+    Pushy.register({ appId: PUSHY_API_KEY })
+      .then((deviceToken) => {
+        mainWindow.webContents.send('main-process-message', deviceToken)
+      })
+      .catch((err) => {
+        console.log('err', err)
+        // Pushy.alert(win, 'Pushy registration error: ' + err.message)
+      })
+  })
 }
 
 // This method will be called when Electron has finished

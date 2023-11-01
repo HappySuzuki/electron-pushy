@@ -8,3 +8,8 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
     <App />
   </React.StrictMode>
 )
+
+// Use contextBridge
+window.electron.ipcRenderer.on('main-process-message', (_event, message) => {
+  console.log('message', message)
+})
